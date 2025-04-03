@@ -1,5 +1,7 @@
 import streamlit as st
 import calendar
+from google.oauth2 import service_account
+from google.cloud import bigquery
 from streamlit_calendar import calendar
 import pandas as pd
 
@@ -22,6 +24,32 @@ st.markdown("""
         """, unsafe_allow_html=True)
 
 st.title("Pistenreservation Zermatt Kalender")
+
+#*-------------------------Setup for panoply data collection-------------------------
+credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
+client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+    
+
+#*-------------------------Functions to load data-------------------------
+# @st.cache_data
+# def load_data_dwh(col, table):
+#     data = conn.query(f"SELECT {col} FROM {table};")
+#     return pd.DataFrame(data)
+@st.cache_data(ttl='4h', show_spinner='Fetching new data...')
+def load_panoply(query):
+    query_job = client.query(query)
+    rows_raw = query_job.result()
+    rows = [dict(row) for row in rows_raw]
+    return pd.DataFrame(rows)
+
+
+query = "SELECT * FROM `panoply.activities` WHERE club_id = 1"
+
+# Load data from Panoply
+df = load_panoply(query)
+
+print(df.head())
+
 
 # Initialize session variables
 if "current_view" not in st.session_state:
@@ -63,40 +91,7 @@ data = [
     {"title": "SwissSki Mastery F", "start": "2025-06-03", "allDay": True, "resourceId": "p8", "color": "red"},
     {"title": "SwissSki Mastery M", "start": "2025-06-04", "allDay": True, "resourceId": "p1"},
     {"title": "NLZ Ost", "start": "2025-06-05", "allDay": True, "resourceId": "p2"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-06", "allDay": True, "resourceId": "p1", "color": "red"},
-    {"title": "NLZ Mitte", "start": "2025-06-07", "allDay": True, "resourceId": "p12", "color": "green"},
-    {"title": "NLZ West", "start": "2025-06-08", "allDay": True, "resourceId": "p5", "color": "orange"},
-    {"title": "International", "start": "2025-06-09", "allDay": True, "resourceId": "p9", "color": "grey"},
-
-    {"title": "SwissSki Mastery F", "start": "2025-06-11", "allDay": True, "resourceId": "p10", "color": "red"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-12", "allDay": True, "resourceId": "p12", "color": "red"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-13", "allDay": True, "resourceId": "p8", "color": "red"},
-    {"title": "SwissSki Mastery M", "start": "2025-06-14", "allDay": True, "resourceId": "p1"},
-    {"title": "NLZ Ost", "start": "2025-06-15", "allDay": True, "resourceId": "p2"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-16", "allDay": True, "resourceId": "p1", "color": "red"},
-    {"title": "NLZ Mitte", "start": "2025-06-17", "allDay": True, "resourceId": "p12", "color": "green"},
-    {"title": "NLZ West", "start": "2025-06-18", "allDay": True, "resourceId": "p5", "color": "orange"},
-    {"title": "International", "start": "2025-06-19", "allDay": True, "resourceId": "p9", "color": "grey"},
-
-    {"title": "SwissSki Mastery F", "start": "2025-06-21", "allDay": True, "resourceId": "p10", "color": "red"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-22", "allDay": True, "resourceId": "p12", "color": "red"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-23", "allDay": True, "resourceId": "p8", "color": "red"},
-    {"title": "SwissSki Mastery M", "start": "2025-06-24", "allDay": True, "resourceId": "p1"},
-    {"title": "NLZ Ost", "start": "2025-06-25", "allDay": True, "resourceId": "p2"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-26", "allDay": True, "resourceId": "p1", "color": "red"},
-    {"title": "NLZ Mitte", "start": "2025-06-27", "allDay": True, "resourceId": "p12", "color": "green"},
-    {"title": "NLZ West", "start": "2025-06-28", "allDay": True, "resourceId": "p5", "color": "orange"},
-    {"title": "International", "start": "2025-06-29", "allDay": True, "resourceId": "p9", "color": "grey"},
-
-    {"title": "SwissSki Mastery F", "start": "2025-06-30", "allDay": True, "resourceId": "p10", "color": "red"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-27", "allDay": True, "resourceId": "p12", "color": "red"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-26", "allDay": True, "resourceId": "p8", "color": "red"},
-    {"title": "SwissSki Mastery M", "start": "2025-06-25", "allDay": True, "resourceId": "p1"},
-    {"title": "NLZ Ost", "start": "2025-06-24", "allDay": True, "resourceId": "p2"},
-    {"title": "SwissSki Mastery F", "start": "2025-06-23", "allDay": True, "resourceId": "p1", "color": "red"},
-    {"title": "NLZ Mitte", "start": "2025-06-22", "allDay": True, "resourceId": "p12", "color": "green"},
-    {"title": "NLZ West", "start": "2025-06-21", "allDay": True, "resourceId": "p5", "color": "orange"},
-    {"title": "International", "start": "2025-06-20", "allDay": True, "resourceId": "p9", "color": "grey"},
+    
 ]
 
 # Create a DataFrame for better organization
